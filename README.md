@@ -173,3 +173,25 @@ python run.py check --model <模型文件> --repo <DDSP仓库>
 | `No CUDA GPUs are available` | RVC 的 `i_gpu` 参数不能写 `cuda:0` | 传数字 `0` |
 | `expected 5, got 3` | RVC 的 filelist 每行要 5 个字段 | `音频\|特征\|f0\|f0nsf\|说话人` |
 | pip 卡死无进度 | 缓存目录不可写 | 所有 pip 命令加 `--no-cache-dir` |
+
+---
+
+## 八、上游依赖
+
+本仓库只是一层胶水脚本。**真正的模型训练和推理都由这些项目完成**，它们各自独立维护：
+
+| 项目 | 在这里的作用 | 地址 |
+|---|---|---|
+| **DDSP-SVC** | 音色转换模型（用 `6.3` 分支） | https://github.com/yxlllc/DDSP-SVC |
+| **RVC** | 检索式音色转换（备选方案，音色通道更强） | https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI |
+| **ContentVec** | 内容特征提取（去说话人信息） | https://huggingface.co/lengyue233/content-vec-best |
+| **RMVPE** | 音高（f0）提取 | https://github.com/yxlllc/RMVPE |
+| **NSF-HiFiGAN** | 声码器 | https://huggingface.co/None1145/DDSP-SVC-Base |
+| **MelBand-Roformer** | 人声分离（实测比 MDX23C 干净约 60 dB） | https://huggingface.co/Kim-ML/mel_band_roformer |
+
+`setup.ps1` 会自动克隆前两个，剩下的底模它会按需下载。
+
+**遇到问题请先看上游的 issue 和文档**——这个仓库的脚本只负责串流程，模型本身的行为由上游决定。上面那张报错表只覆盖 Windows 安装层面的坑。
+
+各项目的许可证见其仓库内的 LICENSE 文件，使用前请自行确认。
+
