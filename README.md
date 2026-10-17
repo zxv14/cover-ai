@@ -162,21 +162,7 @@ python run.py check --model <模型文件> --repo <DDSP仓库>
 
 ---
 
-## 七、常见报错
-
-| 报错 | 原因 | 解法 |
-|---|---|---|
-| `no kernel image is available` | torch 不是 cu128 | 重装 cu128 版本 |
-| `EOFError: Ran out of input` | Windows 多进程 pickle DotDict 失败 | 跑 `patch_train_windows.py` |
-| 训练卡在 0 步、内存涨满 | `num_workers: 2` 触发缓存复制 | 改成 `num_workers: 0` |
-| `ModuleNotFoundError: No module named 'infer'` | 直接跑脚本，根目录不在 sys.path | 改用 `-m`，如 `python -m train.preprocess` |
-| `No CUDA GPUs are available` | RVC 的 `i_gpu` 参数不能写 `cuda:0` | 传数字 `0` |
-| `expected 5, got 3` | RVC 的 filelist 每行要 5 个字段 | `音频\|特征\|f0\|f0nsf\|说话人` |
-| pip 卡死无进度 | 缓存目录不可写 | 所有 pip 命令加 `--no-cache-dir` |
-
----
-
-## 八、上游依赖
+## 七、上游依赖
 
 本仓库只是一层胶水脚本。**真正的模型训练和推理都由这些项目完成**，它们各自独立维护：
 
