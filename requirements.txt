@@ -1,0 +1,46 @@
+# DDSP-SVC 环境（验证过的版本组合）
+# torch 必须从 cu128 索引安装：
+#   pip install torch==2.7.1+cu128 torchaudio==2.7.1+cu128 \
+#       --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir
+torch==2.7.1+cu128
+torchaudio==2.7.1+cu128
+
+# 音频
+numpy==1.26.4
+scipy
+soundfile
+librosa==0.11.0
+resampy
+PyYAML
+tqdm
+pyworld
+praat-parselmouth
+torchcrepe
+
+# 模型
+transformers==4.46.3      # 5.x 会报 Could not import module 'HubertModel'
+beartype
+einops
+rotary_embedding_torch
+
+# DDSP-SVC 训练
+tensorboard
+gin-config
+omegaconf
+ml_collections
+pandas
+matplotlib
+wandb
+loralib
+prodigyopt
+bitsandbytes
+
+# 人声分离（MSST）
+psutil
+nvidia-ml-py
+PyQt5
+wmi
+
+# 说话人相似度评估
+# webrtcvad 无 Windows 轮子，需要放一个桩模块（见 README 第五节）
+resemblyzer

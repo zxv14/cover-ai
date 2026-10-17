@@ -1,16 +1,40 @@
 # cover-ai
 
-音色转换与翻唱的脚本集。13 个文件，按"数据准备 → 训练 → 推理 → 评估"四段使用。
+音色转换与翻唱的脚本集。所有工具都通过 `run.py` 一个入口调用。
 
-前置：Python 3.10 + `torch 2.7.1+cu128`（cu128 是硬要求，50 系显卡用 cu121/cu124 会报 `no kernel image is available`）。
-以下命令都在仓库根目录执行，`PY` 指你的 Python 解释器路径。
+## 快速上手
+
+```powershell
+git clone git@github.com:zxv14/cover-ai.git
+cd cover-ai
+
+# 1. 装依赖（torch 必须单独从 cu128 索引装）
+pip install torch==2.7.1+cu128 torchaudio==2.7.1+cu128 `
+  --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir
+pip install -r requirements.txt --no-cache-dir
+
+# 2. 看有哪些工具
+python run.py list
+
+# 3. 典型流程：干声 → 切片 → 筛选 → 训练 → 推理 → 混音
+python run.py slice  --use-separated work/vocal --out work/dataset
+python run.py filter --exp rvc/logs/myvoice --threshold -45
+python run.py infer  --repo tools/DDSP-SVC-6.3 --model exp/myvoice/model_30000.pt `
+                     --input dry.wav --output converted.wav --step 100
+python run.py mix    --vocal converted.wav --backing inst.wav --out final.wav
+```
+
+每个子命令的参数和对应脚本完全一致，`python run.py mix --help` 可以看说明。
+
+**前置**：Python 3.10 + `torch 2.7.1+cu128`。cu128 是硬要求——50 系显卡用 cu121/cu124 会报
+`no kernel image is available`。
 
 ---
 
 ## 一、先确认环境
 
 ```powershell
-$PY -c "import torch; print(torch.__version__, torch.cuda.get_device_capability(0))"
+python -c "import torch; print(torch.__version__, torch.cuda.get_device_capability(0))"
 ```
 
 要看到 `2.7.1+cu128` 和 `(12, 0)`。不对就别往下走。
@@ -24,7 +48,7 @@ $PY -c "import torch; print(torch.__version__, torch.cuda.get_device_capability(
 把干声放进一个目录（每个文件一条音频），切成训练片段：
 
 ```powershell
-$PY scripts/extract_vocals.py --use-separated <干声目录> --out <数据集目录> `
+python run.py slice --use-separated <干声目录> --out <数据集目录> `
   --min-sec 2.5 --max-sec 10 --val-clips 30
 ```
 
@@ -35,7 +59,7 @@ $PY scripts/extract_vocals.py --use-separated <干声目录> --out <数据集目
 带伴奏残留的片段会污染音色模型。按"静音段电平"筛掉：
 
 ```powershell
-$PY scripts/rvc_filter_clean.py --exp <rvc实验目录> --threshold -45
+python run.py filter --exp <rvc实验目录> --threshold -45
 ```
 
 它读 `0_gt_wavs` 里每段的第 10 百分位电平，低于阈值的留下，其余移到 `_rejected` 子目录（不删），然后生成 RVC 需要的 `filelist.txt`。
@@ -45,7 +69,7 @@ $PY scripts/rvc_filter_clean.py --exp <rvc实验目录> --threshold -45
 ### 3. 生成 DDSP 训练配置
 
 ```powershell
-$PY scripts/make_train_config.py --name <实验名> --train <数据集>\train --val <数据集>\val
+python run.py config --name <实验名> --train <数据集>\train --val <数据集>\val
 ```
 
 输出 `<DDSP仓库>\configs\train-<实验名>.yaml`，并在 `exp/<实验名>` 建实验目录。
@@ -68,10 +92,10 @@ train:
 ### DDSP-SVC
 
 ```powershell
-$PY scripts/patch_train_windows.py --repo <DDSP仓库>      # 只需跑一次
+python run.py patch --repo <DDSP仓库>      # 只需跑一次
 cd <DDSP仓库>
-$PY preprocess.py -c configs/train-<实验名>.yaml -j 2
-$PY train_reflow.py -c configs/train-<实验名>.yaml
+python preprocess.py -c configs/train-<实验名>.yaml -j 2
+python train_reflow.py -c configs/train-<实验名>.yaml
 ```
 
 `patch_train_windows.py` 修的是 `DotDict` 缺 dunder 方法导致 Windows 下多进程 pickle 崩溃的问题——不修的话 `preprocess.py` 会报 `EOFError: Ran out of input`。
@@ -79,8 +103,8 @@ $PY train_reflow.py -c configs/train-<实验名>.yaml
 ### 监控
 
 ```powershell
-$PY scripts/train_status.py --exp <DDSP仓库>\exp\<实验名>
-$PY scripts/watch_train.py --exp <DDSP仓库>\exp\<实验名>
+python run.py status --exp <DDSP仓库>\exp\<实验名>
+python run.py watch --exp <DDSP仓库>\exp\<实验名>
 ```
 
 `watch_train.py` 会检查验证 loss 趋势、NaN、检查点轮换，异常时退出码为 1，可以当门禁用。
@@ -90,10 +114,10 @@ $PY scripts/watch_train.py --exp <DDSP仓库>\exp\<实验名>
 ## 四、推理 + 混音
 
 ```powershell
-$PY scripts/run_ddsp.py --repo <DDSP仓库> --model <检查点.pt> `
+python run.py infer --repo <DDSP仓库> --model <检查点.pt> `
   --input <干声.wav> --output <转换.wav> --key 0 --step 100
 
-$PY scripts/mix.py --vocal <转换.wav> --backing <伴奏.wav> --out <成品.wav> `
+python run.py mix --vocal <转换.wav> --backing <伴奏.wav> --out <成品.wav> `
   --vocal-db 2 --limit --limit-range-db 8
 ```
 
@@ -106,9 +130,9 @@ $PY scripts/mix.py --vocal <转换.wav> --backing <伴奏.wav> --out <成品.wav
 ## 五、评估
 
 ```powershell
-$PY scripts/check_vocal.py --original <干声.wav> --converted <转换.wav>
-$PY scripts/speaker_id.py --target-dir <她的片段目录> --audio <转换.wav>
-$PY scripts/eval_model.py --exp <DDSP仓库>\exp\<实验名> --tag <标签>
+python run.py follow --original <干声.wav> --converted <转换.wav>
+python run.py speaker --target-dir <她的片段目录> --audio <转换.wav>
+python run.py eval --exp <DDSP仓库>\exp\<实验名> --tag <标签>
 ```
 
 ### 怎么读这些数字
@@ -131,7 +155,7 @@ $PY scripts/eval_model.py --exp <DDSP仓库>\exp\<实验名> --tag <标签>
 拿到别人的 `.pt` / `.pth` 先用这个过一遍：
 
 ```powershell
-$PY scripts/check_voicepack.py --model <模型文件> --repo <DDSP仓库>
+python run.py check --model <模型文件> --repo <DDSP仓库>
 ```
 
 它会走真实的推理加载路径，检查 encoder、vocoder、config 是否配套。**DDSP 6.2 和 6.3 的检查点不通用**，跨版本混用会报 `RuntimeError: Error(s) in loading state_dict`。
