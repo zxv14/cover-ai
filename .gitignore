@@ -94,3 +94,5 @@ rvc_train.cmd
 训练-唱歌模型.cmd
 转换-干净人声.cmd
 *.bundle
+# 临时素材（头图等，不属于工具链）
+assets/
