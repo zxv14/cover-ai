@@ -183,11 +183,11 @@ python run.py check --model <模型文件> --repo <DDSP仓库>
 | 项目 | 在这里的作用 | 地址 |
 |---|---|---|
 | **DDSP-SVC** | 音色转换模型（用 `6.3` 分支） | https://github.com/yxlllc/DDSP-SVC |
-| **RVC** | 检索式音色转换（备选方案，音色通道更强） | https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI |
+| **RVC** | 检索式音色转换（音色通道更强） | https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI |
 | **ContentVec** | 内容特征提取（去说话人信息） | https://huggingface.co/lengyue233/content-vec-best |
 | **RMVPE** | 音高（f0）提取 | https://github.com/yxlllc/RMVPE |
 | **NSF-HiFiGAN** | 声码器 | https://huggingface.co/None1145/DDSP-SVC-Base |
-| **MelBand-Roformer** | 人声分离（实测比 MDX23C 干净约 60 dB） | https://huggingface.co/Kim-ML/mel_band_roformer |
+| **MelBand-Roformer** | 人声分离| https://huggingface.co/Kim-ML/mel_band_roformer |
 
 `setup.ps1` 会自动克隆前两个，剩下的底模它会按需下载。
 
