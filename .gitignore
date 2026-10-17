@@ -1,0 +1,96 @@
+# 不进 git 的东西。这个仓库只放工具链，不放任何音频、模型权重或虚拟环境。
+
+# --- 虚拟环境 ---
+.venv/
+.venv-rvc/
+__pycache__/
+*.pyc
+
+# --- 第三方代码（各自 clone，见 README）---
+tools/
+rvc/
+
+# --- 模型权重 ---
+models/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.index
+*.npy
+
+# --- 音频与数据集 ---
+work/
+output/
+*.wav
+*.mp3
+*.m4a
+*.m4s
+*.flac
+*.flv
+*.mp4
+*.7z
+*.zip
+*.whl
+
+# --- 日志 ---
+logs/
+*.log
+events.out.tfevents.*
+
+# --- 编辑器/系统 ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# --- 本地专用：素材获取与分离（依赖具体来源与授权，不进仓库）---
+scripts/harvest_singing.py
+scripts/harvest_all.py
+scripts/batch_streams.py
+scripts/chunked_separate.py
+scripts/bili_fetch_audio.py
+scripts/find_singing.py
+scripts/analyze_stream.py
+scripts/check_separation.py
+
+# --- 一次性分析脚本（数据集质检时用的，无复用价值）---
+scripts/audit_*.py
+# 重建仓库时的备份目录
+.git-old/
+
+
+# 废弃的旧启动脚本
+RVC-训练流程.cmd
+RVC-训练流程2.cmd
+预处理-混合数据.cmd
+
+# 未纳入最小工具集的本机脚本
+scripts/analyze_stream.py
+scripts/batch_streams.py
+scripts/bili_fetch_audio.py
+scripts/check_separation.py
+scripts/chunked_separate.py
+scripts/diag_gh.py
+scripts/env.ps1
+scripts/fetch.py
+scripts/find_singing.py
+scripts/get_assets.py
+scripts/harvest_all.py
+scripts/harvest_singing.py
+scripts/hf_excite.py
+scripts/make_ab.py
+scripts/mem_probe.py
+scripts/mem_stages.py
+scripts/patch_ddsp62.py
+scripts/patch_msst_memory.py
+scripts/prep_dataset.py
+scripts/probe.py
+scripts/speaker_similarity.py
+scripts/speedtest.py
+scripts/verify_torch.py
+rvc_train.cmd
+续训.cmd
+训练-唱歌模型.cmd
+转换-干净人声.cmd
+*.bundle
