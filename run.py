@@ -39,10 +39,17 @@ PASSTHROUGH = {
 
 # 编排类：本文件实现
 NATIVE = {
-    "doctor": "检查环境、上游仓库、底模是否就位",
-    "train":  "干声目录 → 切片 → 生成配置 → 预处理 → 训练（全自动）",
-    "cover":  "模型 + 干声 + 伴奏 → 转换 → 混音（全自动）",
+    "doctor":  "检查环境、上游仓库、底模是否就位",
+    "train":   "干声目录 → 切片 → 生成配置 → 预处理 → 训练（全自动）",
+    "cover":   "模型 + 干声 + 伴奏 → 转换 → 混音（全自动）",
+    "cleanup": "收尾：结束残留的推理/训练/分离进程，释放显存和内存",
 }
+
+# 收尾时要清掉的进程特征
+PIPELINE_MARKERS = (
+    "infer.cli", "train.train", "inference.py", "msst_gui",
+    "preprocess.py", "train_reflow", "extract_f0", "extract_hubert",
+)
 
 
 def say(msg: str) -> None:
@@ -52,6 +59,59 @@ def say(msg: str) -> None:
 def run(cmd: list[str], cwd: str | None = None) -> int:
     print(f"  $ {' '.join(str(c) for c in cmd)}", flush=True)
     return subprocess.run(cmd, cwd=cwd).returncode
+
+
+def cmd_cleanup(_args) -> int:
+    """结束流水线残留进程。跑完不关会一直占着显存和内存，机器会变卡。"""
+    try:
+        import psutil
+    except ImportError:
+        print("  需要 psutil：pip install psutil", file=sys.stderr)
+        return 1
+
+    me = os.getpid()
+    killed, freed = [], 0.0
+    for proc in psutil.process_iter(["pid", "name", "cmdline", "memory_info"]):
+        try:
+            info = proc.info
+            if info["pid"] == me or "python" not in (info["name"] or "").lower():
+                continue
+            cmdline = " ".join(info["cmdline"] or [])
+            if not any(marker in cmdline for marker in PIPELINE_MARKERS):
+                continue
+            mem = info["memory_info"].rss / 1e6 if info["memory_info"] else 0.0
+            proc.kill()
+            proc.wait(timeout=5)
+            killed.append((info["pid"], mem))
+            freed += mem
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
+            continue
+
+    if killed:
+        for pid, mem in killed:
+            say(f"已结束 PID {pid}（{mem:.0f} MB）")
+        say(f"共 {len(killed)} 个进程，释放约 {freed / 1000:.2f} GB 内存")
+    else:
+        say("没有残留的流水线进程")
+
+    try:
+        import pynvml
+        pynvml.nvmlInit()
+        h = pynvml.nvmlDeviceGetHandleByIndex(0)
+        used = pynvml.nvmlDeviceGetMemoryInfo(h).used / 1e9
+        total = pynvml.nvmlDeviceGetMemoryInfo(h).total / 1e9
+        say(f"显存 {used:.2f} / {total:.2f} GB 占用")
+        pynvml.nvmlShutdown()
+    except Exception:
+        pass
+
+    try:
+        import psutil
+        vm = psutil.virtual_memory()
+        say(f"可用内存 {vm.available / 1e9:.1f} GB / {vm.total / 1e9:.1f} GB")
+    except Exception:
+        pass
+    return 0
 
 
 def resolve_repo(arg: str) -> str:
@@ -221,6 +281,9 @@ def main(argv: list[str]) -> int:
 
     if cmd == "doctor":
         return cmd_doctor(rest)
+
+    if cmd == "cleanup":
+        return cmd_cleanup(rest)
 
     if cmd == "train":
         ap = argparse.ArgumentParser(prog="run.py train", description=NATIVE["train"])
