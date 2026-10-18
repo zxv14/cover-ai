@@ -96,3 +96,5 @@ rvc_train.cmd
 *.bundle
 # 临时素材（头图等，不属于工具链）
 assets/
+
+rvc_infer.cmd
